@@ -1,0 +1,25 @@
+{
+  "name": "heating-control-aws-lambda",
+  "version": "1.0.0",
+  "description": "AWS Lambda function to process events from Alexa",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "create-lambda-zip": "rm lambda.zip; npm install; zip -rq lambda.zip *"
+  },
+  "keywords": [
+    "alexa",
+    "voice",
+    "lambda",
+    "pubnub",
+    "automation",
+    "heating",
+    "garage"
+  ],
+  "author": "Shane Weaver",
+  "license": "Apache-2.0",
+  "dependencies": {
+      "pubnub": "^4.3.3"
+    , "uuid": "^3.0.1"
+  }
+}

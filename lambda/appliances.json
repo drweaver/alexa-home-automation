@@ -1,0 +1,72 @@
+[
+    {
+        "applianceId": "heatingcontrol-centralheating",
+        "manufacturerName": "HandyMoose",
+        "modelName": "ST01",
+        "version": "VER01",
+        "friendlyName": "Heating",
+        "friendlyDescription": "the central heating control",
+        "isReachable": true,
+        "actions": [
+            "incrementTargetTemperature",
+            "decrementTargetTemperature",
+            "setTargetTemperature",
+            "turnOn",
+            "turnOff"
+        ],
+        "additionalApplianceDetails": {
+            "pn_channel": "heatingcontrol-override-event",
+            "schedule": "zone"
+        }
+    },
+    {
+        "applianceId": "heatingcontrol-hotwater",
+        "manufacturerName": "HandyMoose",
+        "modelName": "ST01",
+        "version": "VER01",
+        "friendlyName": "Hot Water",
+        "friendlyDescription": "the hot water control",
+        "isReachable": true,
+        "actions": [
+            "turnOn",
+            "turnOff"
+        ],
+        "additionalApplianceDetails": {
+            "pn_channel": "heatingcontrol-override-event",
+            "zone": "hotwater"
+        }
+    },
+    {
+        "applianceId": "heatingcontrol-schedule-winter",
+        "manufacturerName": "HandyMoose",
+        "modelName": "ST01",
+        "version": "VER01",
+        "friendlyName": "Winter Schedule",
+        "friendlyDescription": "the winter schedule for heating control",
+        "isReachable": true,
+        "actions": [
+            "turnOn"
+        ],
+        "additionalApplianceDetails": {
+            "pn_channel": "heatingcontrol.override.event",
+            "schedule": "winter"
+        }
+    },
+    {
+        "applianceId": "heatingcontrol-schedule-away",
+        "manufacturerName": "HandyMoose",
+        "modelName": "ST01",
+        "version": "VER01",
+        "friendlyName": "Away Schedule",
+        "friendlyDescription": "the away schedule for heating control",
+        "isReachable": true,
+        "actions": [
+            "turnOn"
+        ],
+        "additionalApplianceDetails": {
+            "pn_channel": "heatingcontrol.override.event",
+            "schedule": "away"
+        }
+    }     
+    
+]
