@@ -63,8 +63,8 @@
             "turnOn"
         ],
         "additionalApplianceDetails": {
-            "pn_channel": "heatingcontrol.override.event",
-            "schedule": "winter"
+            "pn_channel": "heatingcontrol.schedule.request",
+            "schedule_load": "winter"
         }
     },
     {
@@ -79,9 +79,77 @@
             "turnOn"
         ],
         "additionalApplianceDetails": {
-            "pn_channel": "heatingcontrol.override.event",
-            "schedule": "away"
+            "pn_channel": "heatingcontrol.schedule.request",
+            "schedule_load": "away"
         }
-    }       
+    },
+    {
+        "applianceId": "socketcontrol-socket-1",
+        "manufacturerName": "HandyMoose",
+        "modelName": "ST01",
+        "version": "VER01",
+        "friendlyName": "Socket 1",
+        "friendlyDescription": "energenie socket 1",
+        "isReachable": true,
+        "actions": [
+            "turnOn",
+            "turnOff"
+        ],
+        "additionalApplianceDetails": {
+            "pn_channel": "socketcontrol.request",
+            "socket": 1
+        }
+    },
+    {
+        "applianceId": "socketcontrol-socket-2",
+        "manufacturerName": "HandyMoose",
+        "modelName": "ST01",
+        "version": "VER01",
+        "friendlyName": "Socket 2",
+        "friendlyDescription": "energenie socket 2",
+        "isReachable": true,
+        "actions": [
+            "turnOn",
+            "turnOff"
+        ],
+        "additionalApplianceDetails": {
+            "pn_channel": "socketcontrol.request",
+            "socket": 2
+        }
+    },
+    {
+        "applianceId": "socketcontrol-socket-3",
+        "manufacturerName": "HandyMoose",
+        "modelName": "ST01",
+        "version": "VER01",
+        "friendlyName": "Socket 3",
+        "friendlyDescription": "energenie socket 3",
+        "isReachable": true,
+        "actions": [
+            "turnOn",
+            "turnOff"
+        ],
+        "additionalApplianceDetails": {
+            "pn_channel": "socketcontrol.request",
+            "socket": 3
+        }
+    },
+    {
+        "applianceId": "socketcontrol-socket-4",
+        "manufacturerName": "HandyMoose",
+        "modelName": "ST01",
+        "version": "VER01",
+        "friendlyName": "Socket 4",
+        "friendlyDescription": "energenie socket 4",
+        "isReachable": true,
+        "actions": [
+            "turnOn",
+            "turnOff"
+        ],
+        "additionalApplianceDetails": {
+            "pn_channel": "socketcontrol.request",
+            "socket": 4
+        }
+    }        
     
 ]
