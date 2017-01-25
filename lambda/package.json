@@ -20,6 +20,5 @@
   "license": "Apache-2.0",
   "dependencies": {
       "pubnub": "^4.3.3"
-    , "uuid": "^3.0.1"
   }
 }

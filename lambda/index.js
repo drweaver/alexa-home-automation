@@ -17,8 +17,6 @@ var pubnub = new PubNub({
     ssl: true
 });
 
-const uuid = require('uuid/v4');
-
 var appliances = require('./appliances.json');
 
 const CONTROL = 'Alexa.ConnectedHome.Control';
@@ -105,6 +103,7 @@ function handleControl(event, context) {
 
     var pn_channel = event.payload.appliance.additionalApplianceDetails.pn_channel;
     var pn_msg = event.payload.appliance.additionalApplianceDetails;
+    var applianceZone = event.payload.appliance.additionalApplianceDetails.zone;
     var result = {
         header: {
             namespace: CONTROL,
@@ -114,68 +113,131 @@ function handleControl(event, context) {
         },
         payload: {}
     };
-    switch (event.header.name) {
-        case 'TurnOnRequest':
-            pn_msg.state = 'on';
-            result.header.name = 'TurnOnConfirmation';
-            break;
-        case 'TurnOffRequest':
-            pn_msg.state = 'off';
-            result.header.name = 'TurnOffConfirmation';
-            break;
-        case 'SetTargetTemperatureRequest':
-            pn_msg.target_temperature = event.payload.targetTemperature.value;
-            result.header.name = 'SetTargetTemperatureConfirmation';
-            result.payload.targetTemperature = event.payload.targetTemperature;
-            result.payload.temperatureMode.value = 'AUTO';
-            result.previousState.targetTemperature = event.payload.targetTemperature;
-            result.previousState.mode.value = 'AUTO';
-            break;
-        case 'IncrementTargetTemperatureRequest':
-            pn_msg.target_temperature = '+'+event.payload.deltaTemperature.value;
-            result.header.name = 'IncrementTargetTemperatureConfirmation';
-            result.deltaTemperature = event.payload.deltaTemperature;
-            break;
-        case 'DecrementTargetTemperatureRequest':
-            pn_msg.target_temperature = '-'+event.payload.deltaTemperature.value;
-            result.header.name = 'DecrementTargetTemperatureConfirmation';
-            result.deltaTemperature = event.payload.deltaTemperature;
-            break;
-        default:
-            return context.fail(generateControlError(event.header.name, 'UNSUPPORTED_OPERATION', 'Unrecognized operation'));
-    }
-
-    /**
-     * Retrieve the appliance id and accessToken from the incoming message.
-     */
-    var applianceId = event.payload.appliance.applianceId;
-    log('applianceId', applianceId);
-
-    /**
-     * Make a remote call to execute the action based on accessToken and the applianceId and the switchControlAction
-     * Some other examples of checks:
-     *	validate the appliance is actually reachable else return TARGET_OFFLINE error
-     *	validate the authentication has not expired else return EXPIRED_ACCESS_TOKEN error
-     * Please see the technical documentation for detailed list of errors
-     */
-     
-    log('pubnub', "Publishing message to PubNub");
-    
-    log('pubnub channel', pn_channel);
-    var publishConfig = {
-        channel : pn_channel,
-        message : pn_msg
-    };
-    pubnub.publish(publishConfig, function(status, response) {
-        if( status.error ) {
-            log('pubnub error', status.operation);
+    var submit = () => {
+      pubRequest(pn_channel, pn_msg, err => {
+        if( err ) {
+            log(err);
             context.fail(generateControlError('SwitchOnOffRequest', 'DEPENDENT_SERVICE_UNAVAILABLE', 'Received error from PubNub service'));
         } else {
             log('Done with result', result);
             context.succeed(result);
         }
-    });
+      });
+    };
+    switch (event.header.name) {
+        case 'TurnOnRequest':
+            pn_msg.state = 'on';
+            result.header.name = 'TurnOnConfirmation';
+            submit();
+            break;
+        case 'TurnOffRequest':
+            pn_msg.state = 'off';
+            result.header.name = 'TurnOffConfirmation';
+            submit();
+            break;
+        case 'SetTargetTemperatureRequest':
+            getSchedule(applianceZone, (err,schedule) => {
+                var previousTargetTemperature = undefined;
+                if( !err ) {
+                    previousTargetTemperature = schedule.temperature_target;
+                }
+                pn_msg.temperature_target = event.payload.targetTemperature.value;
+                result.header.name = 'SetTargetTemperatureConfirmation';
+                result.payload.targetTemperature = event.payload.targetTemperature;
+                result.payload.temperatureMode = { value: 'AUTO' };
+                result.payload.previousState = { targetTemperature:  { value: previousTargetTemperature }
+                // , mode: { value: 'AUTO' } 
+                };
+                submit();
+            });
+            break;
+        case 'IncrementTargetTemperatureRequest':
+            getSchedule(applianceZone, (err,schedule) => {
+                if( err ) {
+                    context.fail(generateControlError('DriverInternalError'));
+                } else {
+                    pn_msg.temperature_target = event.payload.deltaTemperature.value + schedule.temperature_target;
+                    result.header.name = 'IncrementTargetTemperatureConfirmation';
+                    result.payload.targetTemperature = { value: pn_msg.temperature_target };
+                    result.payload.previousState = { targetTemperature:  { value: schedule.temperature_target }
+                    // , mode: { value: 'AUTO' } 
+                    };
+                    submit();
+                }
+            });
+            break;
+        case 'DecrementTargetTemperatureRequest':
+            getSchedule(applianceZone, (err,schedule) => {
+                if( err ) {
+                    context.fail(generateControlError('DriverInternalError'));
+                } else {
+                    pn_msg.temperature_target =  schedule.temperature_target - event.payload.deltaTemperature.value;
+                    result.header.name = 'DecrementTargetTemperatureConfirmation';
+                    result.payload.targetTemperature = { value: pn_msg.temperature_target };
+                    result.payload.previousState = { targetTemperature:  { value: schedule.temperature_target }
+                    // , mode: { value: 'AUTO' } 
+                    };
+                    submit();
+                }
+            });
+            break;
+        default:
+            return context.fail(generateControlError('UnsupportedOperationError'));
+    }
+     
 
+
+}
+
+/**
+ * PubNub functions
+ */
+
+function pubRequest(channel, message, callback) {
+    log('pubnub', "Publishing message to PubNub");
+    
+    log('pubnub channel', channel);
+    var publishConfig = {
+        channel : channel,
+        message : message
+    };
+    pubnub.publish(publishConfig, function(status, response) {
+        if( status.error ) {
+            callback('pubnub error: '+ status.operation);
+        } else {
+            callback();
+        }
+    });
+}
+
+function getSchedule(zone, callback) {
+    pubnub.history({
+            channel: 'heatingcontrol.schedule.event',
+            reverse: false, 
+            count: 1
+        },
+        function (status, response) {
+            if( status.error ) {
+                callback( 'PUBNUB: Failed to retrieve schedule history' );
+                return;
+            }
+            log( 'PUBNUB','Successfully retrieved schedule history' );
+            var found = false;
+            response.messages.map( msg => {
+                msg.entry.schedules.map(s => {
+                    if( s.zone == zone && !found ) { 
+                        found = true;
+                        log('PUBNUB zone found: ', s);
+                        callback(undefined, s);
+                    }
+                });
+            });
+            if( !found ) {
+                log('PUBNUB', 'Zone not found: ' + zone);
+                callback('PUBNUB: No active existing schedule for zone: '+zone);
+            }
+        }
+    );
 }
 
 /**
@@ -187,23 +249,16 @@ function log(title, msg) {
     console.log('*************** ' + title + ' End*************');
 }
 
-function generateControlError(name, code, description) {
+function generateControlError(name, payload) {
     var headers = {
         namespace: CONTROL,
         name: name,
         payloadVersion: PAYLOAD_V
     };
 
-    var payload = {
-        exception: {
-            code: code,
-            description: description
-        }
-    };
-
     var result = {
         header: headers,
-        payload: payload
+        payload: payload || {}
     };
 
     return result;
