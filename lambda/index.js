@@ -43,7 +43,7 @@ exports.handler = function(event, context, callback) {
             handleControl(event, context, callback);
             break;
         default:
-            log('Err', 'No supported namespace: ' + event.header.namespace);
+            console.log('Err', 'No supported namespace: ' + event.header.namespace);
             callback('Something went wrong');
             break;
     }
@@ -98,14 +98,14 @@ function handleControl(event, context, callback) {
         return new Promise( (res,rej) => {
             var client = mqtt.connect(MQTT_URL, {username: MQTT_USER, password: MQTT_PASS, port: MQTT_PORT});
             client.on('connect', () => {
-               log('MQTT Connected'); 
+               console.log('MQTT Connected'); 
             });
             client.on('error', err => {
-               log('MQTT Error: ', err); 
+               log('MQTT Error', err); 
                rej(err);
                client.end();
             });
-            log('Publishing '+msg+' to '+topic);
+            console.log('Publishing '+msg+' to '+topic);
             client.publish(topic,msg,err=> {
                err ? rej(err) : res();
                client.end();
@@ -114,12 +114,12 @@ function handleControl(event, context, callback) {
     };
     
     var pubSuccess = () => {
-        log('Publish successful');
+        console.log('Publish successful');
         callback(null, result);
     };
     
     var pubFail = err => {
-        log('Error with publish: '+err);
+        log('Error with publish',err);
         callback(generateControlError(ERR_TARGET_OFFLINE));
     };
     
@@ -135,7 +135,7 @@ function handleControl(event, context, callback) {
     };
     
     if( !(event.header.name in action) ) {
-        log('Unknown action: ' + event.header.name);
+        console.log('Unknown action: ' + event.header.name);
         return callback(generateControlError(ERR_UNSUPPORTED_OPERATION));
     }
       
