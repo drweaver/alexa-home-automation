@@ -1,21 +1,12 @@
 /**
  * 
  */
+var MQTT_URL = process.env.mqtt_url;
+var MQTT_USER = process.env.mqtt_user;
+var MQTT_PASS = process.env.mqtt_pass;
+var MQTT_PORT = process.env.mqtt_port;
 
-
-/**
- * These values set in lambda key/value env variables
- */
-var PN_SUBKEY = process.env.pn_subkey;
-var PN_PUBKEY = process.env.pn_pubkey;
-
-var PubNub = require('pubnub');
-
-var pubnub = new PubNub({
-    subscribeKey: PN_SUBKEY,
-    publishKey: PN_PUBKEY,
-    ssl: true
-});
+var mqtt = require('mqtt');
 
 var appliances = require('./appliances.json');
 
@@ -23,41 +14,37 @@ const CONTROL = 'Alexa.ConnectedHome.Control';
 const DISCOVERY = 'Alexa.ConnectedHome.Discovery';
 const PAYLOAD_V = '2';
 
+const TURN_ON = 'TurnOnRequest';
+const TURN_OFF = 'TurnOffRequest';
+const SET_TEMP = 'SetTargetTemperatureRequest';
+const INC_TEMP = 'IncrementTargetTemperatureRequest';
+const DEC_TEMP = 'DecrementTargetTemperatureRequest';
+
+const TURN_ON_CONF = 'TurnOnConfirmation';
+const TURN_OFF_CONF = 'TurnOffConfirmation';
+
+const ERR_TARGET_OFFLINE = 'TargetOfflineError';
+const ERR_UNSUPPORTED_OPERATION = 'UnsupportedOperationError';
+
+
 /**
  * Main entry point.
  * Incoming events from Alexa Lighting APIs are processed via this method.
  */
-exports.handler = function(event, context) {
+exports.handler = function(event, context, callback) {
 
     log('Input', event);
 
     switch (event.header.namespace) {
-        
-        /**
-         * The namespace of "Discovery" indicates a request is being made to the lambda for
-         * discovering all appliances associated with the customer's appliance cloud account.
-         * can use the accessToken that is made available as part of the payload to determine
-         * the customer.
-         */
         case DISCOVERY:
-            handleDiscovery(event, context);
+            handleDiscovery(event, context, callback);
             break;
-
-            /**
-             * The namespace of "Control" indicates a request is being made to us to turn a
-             * given device on, off or brighten. This message comes with the "appliance"
-             * parameter which indicates the appliance that needs to be acted on.
-             */
         case CONTROL:
-            handleControl(event, context);
+            handleControl(event, context, callback);
             break;
-
-            /**
-             * We received an unexpected message
-             */
         default:
             log('Err', 'No supported namespace: ' + event.header.namespace);
-            context.fail('Something went wrong');
+            callback('Something went wrong');
             break;
     }
 };
@@ -67,21 +54,14 @@ exports.handler = function(event, context) {
  * We are expected to respond back with a list of appliances that we have discovered for a given
  * customer. 
  */
-function handleDiscovery(accessToken, context) {
+function handleDiscovery(accessToken, context, callback) {
 
-    /**
-     * Crafting the response header
-     */
     var headers = {
         namespace: DISCOVERY,
         name: 'DiscoverAppliancesResponse',
         payloadVersion: PAYLOAD_V
     };
 
-    /**
-     * Craft the final response back to Alexa Smart Home Skill. This will include all the 
-     * discoverd appliances.
-     */
     var payloads = {
         discoveredAppliances: appliances
     };
@@ -92,18 +72,18 @@ function handleDiscovery(accessToken, context) {
 
     log('Discovery', result);
 
-    context.succeed(result);
+    callback(null,result);
 }
 
 /**
  * Control events are processed here.
  * This is called when Alexa requests an action (IE turn off appliance).
  */
-function handleControl(event, context) {
+function handleControl(event, context, callback) {
 
-    var pn_channel = event.payload.appliance.additionalApplianceDetails.pn_channel;
-    var pn_msg = event.payload.appliance.additionalApplianceDetails;
-    var applianceZone = event.payload.appliance.additionalApplianceDetails.zone;
+    
+    var detail = event.payload.appliance.additionalApplianceDetails;
+
     var result = {
         header: {
             namespace: CONTROL,
@@ -113,6 +93,56 @@ function handleControl(event, context) {
         },
         payload: {}
     };
+    
+    var publish = (topic, msg) => {
+        return new Promise( (res,rej) => {
+            var client = mqtt.connect(MQTT_URL, {username: MQTT_USER, password: MQTT_PASS, port: MQTT_PORT});
+            client.on('connect', () => {
+               log('MQTT Connected'); 
+            });
+            client.on('error', err => {
+               log('MQTT Error: ', err); 
+               rej(err);
+               client.end();
+            });
+            log('Publishing '+msg+' to '+topic);
+            client.publish(topic,msg,err=> {
+               err ? rej(err) : res();
+               client.end();
+            });
+        });         
+    };
+    
+    var pubSuccess = () => {
+        log('Publish successful');
+        callback(null, result);
+    };
+    
+    var pubFail = err => {
+        log('Error with publish: '+err);
+        callback(generateControlError(ERR_TARGET_OFFLINE));
+    };
+    
+    var action = {
+        TurnOnRequest: () => {
+            result.header.name = TURN_ON_CONF;
+            publish(detail.mqtt_topic, detail.mqtt_on).then(pubSuccess,pubFail);
+        },
+        TurnOffRequest: () => {
+            result.header.name = TURN_OFF_CONF;
+            publish(detail.mqtt_topic, detail.mqtt_off).then(pubSuccess,pubFail);
+        }
+    };
+    
+    if( !(event.header.name in action) ) {
+        log('Unknown action: ' + event.header.name);
+        return callback(generateControlError(ERR_UNSUPPORTED_OPERATION));
+    }
+      
+    action[event.header.name]();
+    
+    /**
+    
     var submit = () => {
       pubRequest(pn_channel, pn_msg, err => {
         if( err ) {
@@ -124,6 +154,7 @@ function handleControl(event, context) {
         }
       });
     };
+    
     switch (event.header.name) {
         case 'TurnOnRequest':
             pn_msg.state = 'on';
@@ -185,14 +216,14 @@ function handleControl(event, context) {
             return context.fail(generateControlError('UnsupportedOperationError'));
     }
      
-
+    **/
 
 }
 
 /**
  * PubNub functions
  */
-
+/**
 function pubRequest(channel, message, callback) {
     log('pubnub', "Publishing message to PubNub");
     
@@ -239,7 +270,7 @@ function getSchedule(zone, callback) {
         }
     );
 }
-
+**/
 /**
  * Utility functions.
  */

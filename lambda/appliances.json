@@ -13,7 +13,11 @@
         ],
         "additionalApplianceDetails": {
             "pn_channel": "heatingcontrol.schedule.request",
-            "zone": "centralheating"
+            "zone": "centralheating",
+            "mqtt_topic": "home/heating/centralheating/set",
+            "mqtt_on": "on",
+            "mqtt_off": "off"
+            
         }
     },
     {
@@ -48,7 +52,10 @@
         ],
         "additionalApplianceDetails": {
             "pn_channel": "heatingcontrol.schedule.request",
-            "zone": "hotwater"
+            "zone": "hotwater",
+            "mqtt_topic": "home/heating/hotwater/set",
+            "mqtt_on": "on",
+            "mqtt_off": "off"
         }
     },
     {
@@ -64,7 +71,9 @@
         ],
         "additionalApplianceDetails": {
             "pn_channel": "heatingcontrol.schedule.request",
-            "schedule_load": "winter"
+            "schedule_load": "winter",
+            "mqtt_topic": "home/heating/schedule/set",
+            "mqtt_on": "winter"
         }
     },
     {
@@ -80,7 +89,9 @@
         ],
         "additionalApplianceDetails": {
             "pn_channel": "heatingcontrol.schedule.request",
-            "schedule_load": "away"
+            "schedule_load": "away",
+            "mqtt_topic": "home/heating/schedule/set",
+            "mqtt_on": "away"
         }
     },
     {
@@ -97,7 +108,10 @@
         ],
         "additionalApplianceDetails": {
             "pn_channel": "socketcontrol.request",
-            "socket": 1
+            "socket": 1,
+            "mqtt_topic": "home/socket/1/set",
+            "mqtt_on": "on",
+            "mqtt_off": "off"
         }
     },
     {
@@ -114,7 +128,10 @@
         ],
         "additionalApplianceDetails": {
             "pn_channel": "socketcontrol.request",
-            "socket": 2
+            "socket": 2,
+            "mqtt_topic": "home/socket/2/set",
+            "mqtt_on": "on",
+            "mqtt_off": "off"
         }
     },
     {
@@ -131,7 +148,10 @@
         ],
         "additionalApplianceDetails": {
             "pn_channel": "socketcontrol.request",
-            "socket": 3
+            "socket": 3,
+            "mqtt_topic": "home/socket/3/set",
+            "mqtt_on": "on",
+            "mqtt_off": "off"
         }
     },
     {
@@ -148,7 +168,10 @@
         ],
         "additionalApplianceDetails": {
             "pn_channel": "socketcontrol.request",
-            "socket": 4
+            "socket": 4,
+            "mqtt_topic": "home/socket/4/set",
+            "mqtt_on": "on",
+            "mqtt_off": "off"
         }
     }        
     
