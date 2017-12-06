@@ -1,6 +1,6 @@
 {
   "name": "heating-control-aws-lambda",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "AWS Lambda function to process events from Alexa",
   "main": "index.js",
   "scripts": {
@@ -11,7 +11,6 @@
     "alexa",
     "voice",
     "lambda",
-    "pubnub",
     "automation",
     "heating",
     "garage"
@@ -19,6 +18,8 @@
   "author": "Shane Weaver",
   "license": "Apache-2.0",
   "dependencies": {
-      "mqtt": "^2.3.1"
-  }
+    "request": "^2.83.0",
+    "request-promise": "^4.2.2"
+  },
+  "devDependencies": {}
 }

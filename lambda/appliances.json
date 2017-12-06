@@ -1,177 +1,184 @@
 [
     {
-        "applianceId": "heatingcontrol-centralheating",
-        "manufacturerName": "HandyMoose",
-        "modelName": "ST01",
-        "version": "VER01",
-        "friendlyName": "Heating",
-        "friendlyDescription": "the central heating control",
-        "isReachable": true,
-        "actions": [
-            "turnOn",
-            "turnOff"
-        ],
-        "additionalApplianceDetails": {
-            "pn_channel": "heatingcontrol.schedule.request",
-            "zone": "centralheating",
-            "mqtt_topic": "home/heating/centralheating/set",
-            "mqtt_on": "on",
-            "mqtt_off": "off"
-            
-        }
-    },
-    {
-        "applianceId": "heatingcontrol-thermostat",
-        "manufacturerName": "HandyMoose",
-        "modelName": "ST01",
-        "version": "VER01",
-        "friendlyName": "Thermostat",
-        "friendlyDescription": "the central heating thermostat",
-        "isReachable": true,
-        "actions": [
-            "incrementTargetTemperature",
-            "decrementTargetTemperature",
-            "setTargetTemperature"
-        ],
-        "additionalApplianceDetails": {
-            "pn_channel": "heatingcontrol.schedule.request",
-            "zone": "centralheating"
-        }
-    },
-    {
-        "applianceId": "heatingcontrol-hotwater",
-        "manufacturerName": "HandyMoose",
-        "modelName": "ST01",
-        "version": "VER01",
-        "friendlyName": "Hot Water",
-        "friendlyDescription": "the hot water control",
-        "isReachable": true,
-        "actions": [
-            "turnOn",
-            "turnOff"
-        ],
-        "additionalApplianceDetails": {
-            "pn_channel": "heatingcontrol.schedule.request",
-            "zone": "hotwater",
-            "mqtt_topic": "home/heating/hotwater/set",
-            "mqtt_on": "on",
-            "mqtt_off": "off"
-        }
-    },
-    {
-        "applianceId": "heatingcontrol-schedule-winter",
-        "manufacturerName": "HandyMoose",
-        "modelName": "ST01",
-        "version": "VER01",
-        "friendlyName": "Winter Schedule",
-        "friendlyDescription": "the winter schedule for heating control",
-        "isReachable": true,
-        "actions": [
-            "turnOn"
-        ],
-        "additionalApplianceDetails": {
-            "pn_channel": "heatingcontrol.schedule.request",
-            "schedule_load": "winter",
-            "mqtt_topic": "home/heating/schedule/set",
-            "mqtt_on": "winter"
-        }
-    },
-    {
-        "applianceId": "heatingcontrol-schedule-away",
-        "manufacturerName": "HandyMoose",
-        "modelName": "ST01",
-        "version": "VER01",
-        "friendlyName": "Away Schedule",
-        "friendlyDescription": "the away schedule for heating control",
-        "isReachable": true,
-        "actions": [
-            "turnOn"
-        ],
-        "additionalApplianceDetails": {
-            "pn_channel": "heatingcontrol.schedule.request",
-            "schedule_load": "away",
-            "mqtt_topic": "home/heating/schedule/set",
-            "mqtt_on": "away"
-        }
-    },
-    {
-        "applianceId": "socketcontrol-socket-1",
+        "endpointId": "socketcontrol-socket-1",
         "manufacturerName": "HandyMoose",
         "modelName": "ST01",
         "version": "VER01",
         "friendlyName": "Socket 1",
-        "friendlyDescription": "energenie socket 1",
-        "isReachable": true,
-        "actions": [
-            "turnOn",
-            "turnOff"
+        "description": "energenie socket 1",
+        "displayCategories": [
+            "SMARTPLUG"
         ],
-        "additionalApplianceDetails": {
-            "pn_channel": "socketcontrol.request",
-            "socket": 1,
-            "mqtt_topic": "home/socket/1/set",
-            "mqtt_on": "on",
-            "mqtt_off": "off"
+        "capabilities": [
+            {
+                "type": "AlexaInterface",
+                "interface": "Alexa.PowerController",
+                "version": "3",
+                "properties": {
+                  "supported": [ {
+                    "name": "powerState"
+                  } ],
+                  "proactivelyReported": true,
+                  "retrievable": true
+               }
+            }
+        ],
+        "cookie": {
+            "deviceId": "socket-control-1",
+            "deviceTurnOn": "on",
+            "deviceTurnOff": "off",
+            "stateTurnOn": "ON",
+            "stateTurnOff": "OFF",
+            "stateName": "powerState",
+            "deviceState_on": "stateTurnOn",
+            "deviceState_off": "stateTurnOff",
+            "interface": "Alexa.PowerController"
         }
     },
     {
-        "applianceId": "socketcontrol-socket-2",
+        "endpointId": "socketcontrol-socket-2",
         "manufacturerName": "HandyMoose",
         "modelName": "ST01",
         "version": "VER01",
         "friendlyName": "Socket 2",
-        "friendlyDescription": "energenie socket 2",
-        "isReachable": true,
-        "actions": [
-            "turnOn",
-            "turnOff"
+        "description": "energenie socket 2",
+        "displayCategories": [
+            "SMARTPLUG"
         ],
-        "additionalApplianceDetails": {
-            "pn_channel": "socketcontrol.request",
-            "socket": 2,
-            "mqtt_topic": "home/socket/2/set",
-            "mqtt_on": "on",
-            "mqtt_off": "off"
+        "capabilities": [
+            {
+                "type": "AlexaInterface",
+                "interface": "Alexa.PowerController",
+                "version": "3",
+                "properties": {
+                  "supported": [ {
+                    "name": "powerState"
+                  } ],
+                  "proactivelyReported": true,
+                  "retrievable": true
+               }
+            }
+        ],
+        "cookie": {
+            "deviceId": "socket-control-2",
+            "deviceTurnOn": "on",
+            "deviceTurnOff": "off",
+            "stateTurnOn": "ON",
+            "stateTurnOff": "OFF",
+            "stateName": "powerState",
+            "deviceState_on": "stateTurnOn",
+            "deviceState_off": "stateTurnOff",
+            "interface": "Alexa.PowerController"        
         }
     },
     {
-        "applianceId": "socketcontrol-socket-3",
+        "endpointId": "socketcontrol-socket-3",
         "manufacturerName": "HandyMoose",
         "modelName": "ST01",
         "version": "VER01",
         "friendlyName": "Socket 3",
-        "friendlyDescription": "energenie socket 3",
-        "isReachable": true,
-        "actions": [
-            "turnOn",
-            "turnOff"
+        "description": "energenie socket 3",
+        "displayCategories": [
+            "SMARTPLUG"
         ],
-        "additionalApplianceDetails": {
-            "pn_channel": "socketcontrol.request",
-            "socket": 3,
-            "mqtt_topic": "home/socket/3/set",
-            "mqtt_on": "on",
-            "mqtt_off": "off"
+        "capabilities": [
+            {
+                "type": "AlexaInterface",
+                "interface": "Alexa.PowerController",
+                "version": "3",
+                "properties": {
+                  "supported": [ {
+                    "name": "powerState"
+                  } ],
+                  "proactivelyReported": true,
+                  "retrievable": true
+               }
+            }
+        ],
+        "cookie": {
+            "deviceId": "socket-control-3",
+            "deviceTurnOn": "on",
+            "deviceTurnOff": "off",
+            "stateTurnOn": "ON",
+            "stateTurnOff": "OFF",
+            "stateName": "powerState",
+            "deviceState_on": "stateTurnOn",
+            "deviceState_off": "stateTurnOff",
+            "interface": "Alexa.PowerController"        
         }
     },
     {
-        "applianceId": "socketcontrol-socket-4",
+        "endpointId": "socketcontrol-socket-4",
         "manufacturerName": "HandyMoose",
         "modelName": "ST01",
         "version": "VER01",
         "friendlyName": "Socket 4",
-        "friendlyDescription": "energenie socket 4",
-        "isReachable": true,
-        "actions": [
-            "turnOn",
-            "turnOff"
+        "description": "energenie socket 4",
+        "displayCategories": [
+            "SMARTPLUG"
         ],
-        "additionalApplianceDetails": {
-            "pn_channel": "socketcontrol.request",
-            "socket": 4,
-            "mqtt_topic": "home/socket/4/set",
-            "mqtt_on": "on",
-            "mqtt_off": "off"
+        "capabilities": [
+            {
+                "type": "AlexaInterface",
+                "interface": "Alexa.PowerController",
+                "version": "3",
+                "properties": {
+                  "supported": [ {
+                    "name": "powerState"
+                  } ],
+                  "proactivelyReported": true,
+                  "retrievable": true
+               }
+            }
+        ],
+        "cookie": {
+            "deviceId": "socket-control-4",
+            "deviceTurnOn": "on",
+            "deviceTurnOff": "off",
+            "stateTurnOn": "ON",
+            "stateTurnOff": "OFF",
+            "stateName": "powerState",
+            "deviceState_on": "stateTurnOn",
+            "deviceState_off": "stateTurnOff",
+            "interface": "Alexa.PowerController"
+        }
+    },
+    {
+        "endpointId": "garagecontrol",
+        "manufacturerName": "HandyMoose",
+        "modelName": "ST01",
+        "version": "VER01",
+        "friendlyName": "Garage Door",
+        "description": "Garage Door",
+        "displayCategories": [
+            "SMARTLOCK"
+        ],
+        "capabilities": [
+            {
+                "type": "AlexaInterface",
+                "interface": "Alexa.LockController",
+                "version": "3",
+                "properties": {
+                  "supported": [ {
+                    "name": "lockState"
+                  } ],
+                  "proactivelyReported": true,
+                  "retrievable": true
+               }
+            }
+        ],
+        "cookie": {
+            "deviceId": "garage-control",
+            "deviceUnlock": "open",
+            "deviceLock": "close",
+            "stateUnlock": "UNLOCKED",
+            "stateLock": "LOCKED",
+            "stateName": "lockState",
+            "deviceState_opened": "stateUnlock",
+            "deviceState_closed": "stateLock",
+            "deviceState_opening": "stateUnlock",
+            "deviceState_closing": "stateUnlock",
+            "interface": "Alexa.LockController"
         }
     }        
     

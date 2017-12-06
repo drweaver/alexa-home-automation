@@ -1,76 +1,73 @@
 /**
  * 
  */
-var MQTT_URL = process.env.mqtt_url;
-var MQTT_USER = process.env.mqtt_user;
-var MQTT_PASS = process.env.mqtt_pass;
-var MQTT_PORT = process.env.mqtt_port;
-
-var mqtt = require('mqtt');
+var AUTH_KEY = process.env.AUTH_KEY;
+var SET_DEVICE_CONFIG_URL = process.env.SET_DEVICE_CONFIG_URL;
+var GET_DEVICE_STATE_URL = process.env.GET_DEVICE_STATE_URL;
 
 var appliances = require('./appliances.json');
+var rp = require('request-promise');
 
-const CONTROL = 'Alexa.ConnectedHome.Control';
-const DISCOVERY = 'Alexa.ConnectedHome.Discovery';
-const PAYLOAD_V = '2';
+const CONTROL_POWER = 'Alexa.PowerController';
+const CONTROL_LOCK = 'Alexa.LockController';
+const DISCOVERY = 'Alexa.Discovery';
+const DISCOVERY_RESPONSE = 'Discover.Response';
+const ALEXA = 'Alexa';
+const RESPONSE = 'Response';
+const STATE_REPORT = 'StateReport';
+const ERROR_RESPONSE = 'ErrorResponse';
 
-const TURN_ON = 'TurnOnRequest';
-const TURN_OFF = 'TurnOffRequest';
-const SET_TEMP = 'SetTargetTemperatureRequest';
-const INC_TEMP = 'IncrementTargetTemperatureRequest';
-const DEC_TEMP = 'DecrementTargetTemperatureRequest';
-
-const TURN_ON_CONF = 'TurnOnConfirmation';
-const TURN_OFF_CONF = 'TurnOffConfirmation';
-
-const ERR_TARGET_OFFLINE = 'TargetOfflineError';
-const ERR_UNSUPPORTED_OPERATION = 'UnsupportedOperationError';
-
+const PAYLOAD_V = '3';
 
 /**
  * Main entry point.
  * Incoming events from Alexa Lighting APIs are processed via this method.
  */
-exports.handler = function(event, context, callback) {
+exports.handler = function(request, context, callback) {
 
-    log('Input', event);
+    console.log('Input', request);
 
-    switch (event.header.namespace) {
-        case DISCOVERY:
-            handleDiscovery(event, context, callback);
-            break;
-        case CONTROL:
-            handleControl(event, context, callback);
-            break;
-        default:
-            console.log('Err', 'No supported namespace: ' + event.header.namespace);
-            callback('Something went wrong');
-            break;
+    switch (request.directive.header.namespace) {
+    case DISCOVERY:
+        handleDiscovery(request, context, callback);
+        break;
+    case CONTROL_POWER:
+    case CONTROL_LOCK:
+        handleControl(request, context, callback);
+        break;
+    case ALEXA:
+        handleReportState(request, context, callback);
+        break;
+    default:
+        console.log('Err', 'No supported namespace: ' + request.directive.header.namespace);
+        callback('Something went wrong');
+        break;
     }
 };
+
 
 /**
  * This method is invoked when we receive a "Discovery" message from Alexa Smart Home Skill.
  * We are expected to respond back with a list of appliances that we have discovered for a given
  * customer. 
  */
-function handleDiscovery(accessToken, context, callback) {
+function handleDiscovery(request, context, callback) {
 
-    var headers = {
-        namespace: DISCOVERY,
-        name: 'DiscoverAppliancesResponse',
-        payloadVersion: PAYLOAD_V
-    };
-
-    var payloads = {
-        discoveredAppliances: appliances
-    };
     var result = {
-        header: headers,
-        payload: payloads
+        event: {
+            header: {
+                namespace: DISCOVERY,
+                name: DISCOVERY_RESPONSE,
+                payloadVersion: PAYLOAD_V,
+                messageId: request.directive.header.messageId+'-R'
+            },
+            payload: { 
+                endpoints: appliances
+            }
+        }
     };
 
-    log('Discovery', result);
+    console.log('Discovery', result);
 
     callback(null,result);
 }
@@ -79,218 +76,170 @@ function handleDiscovery(accessToken, context, callback) {
  * Control events are processed here.
  * This is called when Alexa requests an action (IE turn off appliance).
  */
-function handleControl(event, context, callback) {
+function handleControl(request, context, callback) {
 
-    
-    var detail = event.payload.appliance.additionalApplianceDetails;
+    const cookie = request.directive.endpoint.cookie;
+    const requestMethod = request.directive.header.name;    
 
-    var result = {
-        header: {
-            namespace: CONTROL,
-            payloadVersion: PAYLOAD_V,
-            name: '',
-            messageId: event.header.messageId
-        },
-        payload: {}
-    };
-    
-    var publish = (topic, msg) => {
-        return new Promise( (res,rej) => {
-            var client = mqtt.connect(MQTT_URL, {username: MQTT_USER, password: MQTT_PASS, port: MQTT_PORT});
-            client.on('connect', () => {
-               console.log('MQTT Connected'); 
-            });
-            client.on('error', err => {
-               log('MQTT Error', err); 
-               rej(err);
-               client.end();
-            });
-            console.log('Publishing '+msg+' to '+topic);
-            client.publish(topic,msg,err=> {
-               err ? rej(err) : res();
-               client.end();
-            });
-        });         
-    };
-    
-    var pubSuccess = () => {
-        console.log('Publish successful');
-        callback(null, result);
-    };
-    
-    var pubFail = err => {
-        log('Error with publish',err);
-        callback(generateControlError(ERR_TARGET_OFFLINE));
-    };
-    
-    var action = {
-        TurnOnRequest: () => {
-            result.header.name = TURN_ON_CONF;
-            publish(detail.mqtt_topic, detail.mqtt_on).then(pubSuccess,pubFail);
-        },
-        TurnOffRequest: () => {
-            result.header.name = TURN_OFF_CONF;
-            publish(detail.mqtt_topic, detail.mqtt_off).then(pubSuccess,pubFail);
-        }
-    };
-    
-    if( !(event.header.name in action) ) {
-        console.log('Unknown action: ' + event.header.name);
-        return callback(generateControlError(ERR_UNSUPPORTED_OPERATION));
-    }
-      
-    action[event.header.name]();
-    
-    /**
-    
-    var submit = () => {
-      pubRequest(pn_channel, pn_msg, err => {
-        if( err ) {
-            log(err);
-            context.fail(generateControlError('SwitchOnOffRequest', 'DEPENDENT_SERVICE_UNAVAILABLE', 'Received error from PubNub service'));
-        } else {
-            log('Done with result', result);
-            context.succeed(result);
-        }
-      });
-    };
-    
-    switch (event.header.name) {
-        case 'TurnOnRequest':
-            pn_msg.state = 'on';
-            result.header.name = 'TurnOnConfirmation';
-            submit();
-            break;
-        case 'TurnOffRequest':
-            pn_msg.state = 'off';
-            result.header.name = 'TurnOffConfirmation';
-            submit();
-            break;
-        case 'SetTargetTemperatureRequest':
-            getSchedule(applianceZone, (err,schedule) => {
-                var previousTargetTemperature = undefined;
-                if( !err ) {
-                    previousTargetTemperature = schedule.temperature_target;
-                }
-                pn_msg.temperature_target = event.payload.targetTemperature.value;
-                result.header.name = 'SetTargetTemperatureConfirmation';
-                result.payload.targetTemperature = event.payload.targetTemperature;
-                result.payload.temperatureMode = { value: 'AUTO' };
-                result.payload.previousState = { targetTemperature:  { value: previousTargetTemperature }
-                // , mode: { value: 'AUTO' } 
-                };
-                submit();
-            });
-            break;
-        case 'IncrementTargetTemperatureRequest':
-            getSchedule(applianceZone, (err,schedule) => {
-                if( err ) {
-                    context.fail(generateControlError('DriverInternalError'));
-                } else {
-                    pn_msg.temperature_target = event.payload.deltaTemperature.value + schedule.temperature_target;
-                    result.header.name = 'IncrementTargetTemperatureConfirmation';
-                    result.payload.targetTemperature = { value: pn_msg.temperature_target };
-                    result.payload.previousState = { targetTemperature:  { value: schedule.temperature_target }
-                    // , mode: { value: 'AUTO' } 
-                    };
-                    submit();
-                }
-            });
-            break;
-        case 'DecrementTargetTemperatureRequest':
-            getSchedule(applianceZone, (err,schedule) => {
-                if( err ) {
-                    context.fail(generateControlError('DriverInternalError'));
-                } else {
-                    pn_msg.temperature_target =  schedule.temperature_target - event.payload.deltaTemperature.value;
-                    result.header.name = 'DecrementTargetTemperatureConfirmation';
-                    result.payload.targetTemperature = { value: pn_msg.temperature_target };
-                    result.payload.previousState = { targetTemperature:  { value: schedule.temperature_target }
-                    // , mode: { value: 'AUTO' } 
-                    };
-                    submit();
-                }
-            });
-            break;
-        default:
-            return context.fail(generateControlError('UnsupportedOperationError'));
-    }
-     
-    **/
+    setDeviceConfig({deviceId: cookie.deviceId, payload: cookie['device'+requestMethod]})
+        .then( () => {
+            console.log('Publish successful');
+            callback(null, generateControlResult(request));
+        })
+        .catch( err=> {
+            console.error('Error with publish',err);
+            callback(generateErrorResult(request, err.message));
+        });
 
 }
 
-/**
- * PubNub functions
- */
-/**
-function pubRequest(channel, message, callback) {
-    log('pubnub', "Publishing message to PubNub");
-    
-    log('pubnub channel', channel);
-    var publishConfig = {
-        channel : channel,
-        message : message
-    };
-    pubnub.publish(publishConfig, function(status, response) {
-        if( status.error ) {
-            callback('pubnub error: '+ status.operation);
-        } else {
-            callback();
-        }
+function handleReportState(request, context, callback) {
+    const cookie = request.directive.endpoint.cookie;
+    console.log(cookie);
+    getDeviceState({deviceId: cookie.deviceId})
+        .then( state=> {
+            console.log('Device state is', state);
+            callback(null, generateReportResult(request, state));
+        })
+        .catch( err => {
+            console.error('Error with publish',err);
+            callback(generateErrorResult(request, err.message));
+        });
+
+}
+
+function getDeviceState( config ) {
+    console.log(config);
+    if( config === undefined || config.deviceId === undefined ) {
+        throw new Error('Invalid object provided to getDeviceState, must contain deviceId');
+    }
+    return rp({
+        method: 'POST',
+        uri: GET_DEVICE_STATE_URL,
+        body: {
+            authKey: AUTH_KEY,
+            deviceId: config.deviceId
+        },
+        json: true
     });
 }
 
-function getSchedule(zone, callback) {
-    pubnub.history({
-            channel: 'heatingcontrol.schedule.event',
-            reverse: false, 
-            count: 1
+/**
+ * setDeviceConfig 
+ * @param {*} config.deviceId Device id e.g. home/socket/1/set
+ * @param {*} config.payload Message to send to device e.g. on
+ */
+function setDeviceConfig( config ) {
+    console.log('config', config);
+    if( config === undefined || config.deviceId === undefined || config.payload === undefined ) {
+        throw new Error('Invalid object provided to setDeviceConfig, must contain deviceId and payload parameters', config);
+    }
+    return rp({
+        method: 'POST',
+        uri: SET_DEVICE_CONFIG_URL,
+        body: {
+            authKey: AUTH_KEY,
+            deviceId: config.deviceId,
+            payload: config.payload
         },
-        function (status, response) {
-            if( status.error ) {
-                callback( 'PUBNUB: Failed to retrieve schedule history' );
-                return;
-            }
-            log( 'PUBNUB','Successfully retrieved schedule history' );
-            var found = false;
-            response.messages.map( msg => {
-                msg.entry.schedules.map(s => {
-                    if( s.zone == zone && !found ) { 
-                        found = true;
-                        log('PUBNUB zone found: ', s);
-                        callback(undefined, s);
-                    }
-                });
-            });
-            if( !found ) {
-                log('PUBNUB', 'Zone not found: ' + zone);
-                callback('PUBNUB: No active existing schedule for zone: '+zone);
+        json: true // Automatically stringifies the body to JSON
+    });
+}
+
+
+function generateReportResult(request, state) {
+
+    const cookie = request.directive.endpoint.cookie;
+    const controlType = cookie.interface;
+    const messageId = request.directive.header.messageId + '-R';
+    const correlationToken = request.directive.header.correlationToken;
+    const endpointId = request.directive.endpoint.endpointId;
+    const deviceState = cookie[cookie['deviceState_'+state.payload]];
+
+    return {
+        context: {
+            properties: [{
+                namespace: controlType,
+                name: cookie.stateName,
+                value: deviceState,
+                timeOfSample: state.updateTime, //retrieve from result.
+                uncertaintyInMilliseconds: 50
+            }]
+        },
+        event: {
+            header: {
+                namespace: ALEXA,
+                name: STATE_REPORT,
+                payloadVersion: PAYLOAD_V,
+                messageId: messageId,
+                correlationToken: correlationToken
+            },
+            endpoint: {
+                endpointId: endpointId
+            },
+            payload: {}
+        }
+    };
+}
+
+function generateControlResult(request) {
+
+    const cookie = request.directive.endpoint.cookie;
+    const requestMethod = request.directive.header.name;
+    const controlType = request.directive.header.namespace;
+    const messageId = request.directive.header.messageId + '-R';
+    const correlationToken = request.directive.header.correlationToken;
+    const endpointId = request.directive.endpoint.endpointId;
+
+    return {
+        context: {
+            properties: [{
+                namespace: controlType,
+                name: cookie.stateName,
+                value: cookie['state'+requestMethod],
+                timeOfSample: new Date().toJSON(), //retrieve from result.
+                uncertaintyInMilliseconds: 50
+            }]
+        },
+        event: {
+            header: {
+                namespace: ALEXA,
+                payloadVersion: PAYLOAD_V,
+                name: RESPONSE,
+                messageId: messageId,
+                correlationToken: correlationToken
+            },
+            endpoint: {
+                endpointId: endpointId
+            },
+            payload: {}
+        }
+    };
+}
+
+function generateErrorResult(request, msg) {
+
+    const messageId = request.directive.header.messageId + '-R';
+    const correlationToken = request.directive.header.correlationToken;
+    const endpointId = request.directive.endpoint.endpointId;
+
+    return {
+        event: {
+            header: {
+                payloadVersion: PAYLOAD_V,
+                namespace: ALEXA,
+                name: ERROR_RESPONSE,
+                messageId: messageId,
+                correlationToken: correlationToken
+            },
+            endpoint: {
+                endpointId: endpointId
+            },
+            payload: {
+                type: 'INTERNAL_ERROR',
+                message: msg
             }
         }
-    );
-}
-**/
-/**
- * Utility functions.
- */
-function log(title, msg) {
-    console.log('*************** ' + title + ' *************');
-    console.log(msg);
-    console.log('*************** ' + title + ' End*************');
-}
-
-function generateControlError(name, payload) {
-    var headers = {
-        namespace: CONTROL,
-        name: name,
-        payloadVersion: PAYLOAD_V
     };
 
-    var result = {
-        header: headers,
-        payload: payload || {}
-    };
-
-    return result;
 }
